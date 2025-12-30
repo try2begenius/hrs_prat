@@ -1,0 +1,668 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
+import { Badge } from "./components/ui/badge";
+import { Button } from "./components/ui/button";
+import { Separator } from "./components/ui/separator";
+import { Textarea } from "./components/ui/textarea";
+import { Label } from "./components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "./components/ui/select";
+import { Input } from "./components/ui/input";
+import { Switch } from "./components/ui/switch";
+import { Checkbox } from "./components/ui/checkbox";
+
+import {
+  CheckCircle,
+  FileText,
+  AlertTriangle,
+  Shield,
+  Upload,
+  Download,
+  Edit,
+  Save,
+  Paperclip
+} from "lucide-react";
+
+interface RiskSummarySectionProps {
+  caseData: any;
+  userRole: "hrs-analyst" | "hrs-manager" | "flu-aml" | "view-only";
+  canEdit: boolean;
+  onDataChange: () => void;
+}
+
+interface Attachment {
+  id: string;
+  name: string;
+  size: string;
+  uploadedBy: string;
+  uploadDate: string;
+}
+
+export default function App() {
+  const [userRole, setUserRole] = useState<"hrs-analyst" | "hrs-manager" | "flu-aml" | "view-only">("hrs-analyst");
+  const [canEdit] = useState(true);
+  
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-6xl mx-auto space-y-4">
+        {/* Role Switcher */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-4">
+              <Label htmlFor="role-selector" className="font-semibold">
+                Switch User Role:
+              </Label>
+              <Select value={userRole} onValueChange={(value: any) => setUserRole(value)}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hrs-analyst">HRS Analyst</SelectItem>
+                  <SelectItem value="hrs-manager">HRS Manager</SelectItem>
+                  <SelectItem value="flu-aml">FLU AML</SelectItem>
+                  <SelectItem value="view-only">View Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <RiskSummarySection
+          caseData={{}}
+          userRole={userRole}
+          canEdit={canEdit}
+          onDataChange={() => console.log("Data changed")}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function RiskSummarySection({
+  caseData,
+  userRole,
+  canEdit,
+  onDataChange
+}: RiskSummarySectionProps) {
+// Risk Summary State
+const [riskSummary, setRiskSummary] = useState({
+  summary:
+    "Client exhibits multiple high-risk characteristics including Cayman Islands domicile, PEP status, and GFC intelligence presence. Investment Banking LOB has implemented enhanced due diligence monitoring controls. Wealth Management division maintains ongoing PEP monitoring. All control processes are operating effectively with high effectiveness ratings.",
+  recommendation: "",
+  escalationReason: "",
+  trmsTrackingNumber: ""
+});
+
+// Store initial state for cancel functionality
+const initialRiskSummary = {
+  summary:
+    "Client exhibits multiple high-risk characteristics including Cayman Islands domicile, PEP status, and GFC intelligence presence. Investment Banking LOB has implemented enhanced due diligence monitoring controls. Wealth Management division maintains ongoing PEP monitoring. All control processes are operating effectively with high effectiveness ratings.",
+  recommendation: "",
+  escalationReason: "",
+  trmsTrackingNumber: ""
+};
+
+// Attestation Checkboxes State
+const [attestation, setAttestation] = useState({
+  approvedNoAdditional: false,
+  reviewedNoEscalation: false,
+  reviewedEscalatedFLU: false,
+  reviewedEscalatedTRMS: false,
+  confirmDataReviewed: false
+});
+
+// Store initial attestation state
+const initialAttestation = {
+  approvedNoAdditional: false,
+  reviewedNoEscalation: false,
+  reviewedEscalatedFLU: false,
+  reviewedEscalatedTRMS: false,
+  confirmDataReviewed: false
+};
+
+// Outcomes State
+const [outcomes, setOutcomes] = useState({
+  fluAmlOutcome: "",
+  gfcOutcome: "",
+  fluNoEscalation: false,
+  fluConfirmedAcceptable: false,
+  fluAmlTrms: false,
+  fluAmlTrmsNumber: "",
+  fluConfirmedExit: false,
+  gfcTrms: false,
+  gfcTrmsNumber: ""
+});
+
+// Store initial outcomes state
+const initialOutcomes = {
+  fluAmlOutcome: "",
+  gfcOutcome: "",
+  fluNoEscalation: false,
+  fluConfirmedAcceptable: false,
+  fluAmlTrms: false,
+  fluAmlTrmsNumber: "",
+  fluConfirmedExit: false,
+  gfcTrms: false,
+  gfcTrmsNumber: ""
+};
+
+const getEditableFields = () => {
+  switch (userRole) {
+    case "hrs-analyst":
+    case "hrs-manager":
+      return [
+        "summary",
+        "recommendation",
+        "escalationReason",
+        "trmsTrackingNumber"
+      ];
+    case "flu-aml":
+      return [
+        "summary",
+        "fluAmlOutcome",
+        "fluAmlTrms",
+        "fluAmlTrmsNumber"
+      ];
+    default:
+      return [];
+  }
+};
+
+const canEditField = (field: string) => {
+  return getEditableFields().includes(field);
+};
+
+const handleSave = () => {
+  onDataChange();
+};
+
+const handleCancel = () => {
+  setRiskSummary(initialRiskSummary);
+  setAttestation(initialAttestation);
+  setOutcomes(initialOutcomes);
+};
+
+return (
+  <div className="space-y-6 p-4 border rounded-lg bg-card">
+    <div className="pb-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-2">
+          {canEdit && (
+            <div className="flex space-x-2">
+              <Button size="sm" onClick={handleSave} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800">
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                Submit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <div className="text-sm text-muted-foreground">
+      <p>
+        Final risk summary narrative and recommendation with role-based decision
+        capabilities.
+      </p>
+    </div>
+
+    {/* Risk Mitigants Summary – HRA Only */}
+    <div className="space-y-4">
+      <h4 className="font-medium flex items-center space-x-2">
+        <Shield className="h-4 w-4" />
+        <span>Risk Mitigants Summary</span>
+      </h4>
+
+      <div className="space-y-2">
+        <Label htmlFor="risk-summary">
+          Summary of Internal Controls
+        </Label>
+        <Textarea
+          id="risk-summary"
+          value={riskSummary.summary}
+          onChange={e =>
+            setRiskSummary({
+              ...riskSummary,
+              summary: e.target.value
+            })
+          }
+          disabled={!canEditField("summary")}
+          rows={4}
+          placeholder="Summarize the internal controls for each FLU and highlight factors requiring escalation..."
+        />
+        <p className="text-sm text-muted-foreground">
+          Please do not enter any sensitive information in the Risk Mitigant Summary section
+        </p>
+      </div>
+    </div>
+
+    <Separator />
+    {/* TRMS Tracking Number */}
+    <div className="space-y-2">
+      <Label htmlFor="trms-tracking-number">
+        TRMS Tracking Number {(attestation.reviewedEscalatedTRMS || outcomes.fluAmlTrms || outcomes.fluConfirmedExit) && <span className="text-red-500">*</span>}
+      </Label>
+      <Input
+        id="trms-tracking-number"
+        value={riskSummary.trmsTrackingNumber}
+        onChange={e =>
+          setRiskSummary({
+            ...riskSummary,
+            trmsTrackingNumber: e.target.value
+          })
+        }
+        placeholder="Enter TRMS tracking number"
+        required={attestation.reviewedEscalatedTRMS || outcomes.fluAmlTrms || outcomes.fluConfirmedExit}
+      />
+    </div>
+
+    {/* HRS Analyst/Manager Input */}
+    <Card className="bg-white border-slate-200">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <h3 className="font-semibold flex items-center space-x-2">
+            <FileText className="h-5 w-5" />
+            <span>HRS Analyst/Manager Input</span>
+          </h3>
+
+          {/* Recommendation Section */}
+          <div className="space-y-4">
+            <h4 className="font-medium flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Recommendation</span>
+            </h4>
+
+            {/* Escalation Reason - shows when attestation checkbox is selected */}
+            {attestation.reviewedEscalatedFLU && (
+              <div className="space-y-2">
+                <Label htmlFor="escalation-reason">Escalation Reason</Label>
+                <Select
+                  value={riskSummary.escalationReason}
+                  onValueChange={value =>
+                    setRiskSummary({
+                      ...riskSummary,
+                      escalationReason: value
+                    })
+                  }
+                  disabled={!canEditField("escalationReason")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high_risk_attributes">
+                      High Number of Risk Attributes
+                    </SelectItem>
+                    <SelectItem value="specific_combination">
+                      Specific Combination of Risk Attributes
+                    </SelectItem>
+                    <SelectItem value="additional_factors">
+                      Additional Risk Factors Present
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Attestation Checkboxes – HRA Only */}
+            <Card className="bg-slate-50 border-slate-200 mt-4">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="attestation-approved"
+                      checked={attestation.approvedNoAdditional}
+                      onCheckedChange={checked =>
+                        setAttestation({
+                          ...attestation,
+                          approvedNoAdditional: checked as boolean
+                        })
+                      }
+                      disabled={!canEdit}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="attestation-approved"
+                      className="text-sm cursor-pointer"
+                    >
+                      Risk factors have been approved as part of most recent refresh
+                      and/or client activity monitoring and no additional factors have
+                      been identified or have already been properly escalated
+                    </Label>
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="attestation-no-escalation"
+                      checked={attestation.reviewedNoEscalation}
+                      onCheckedChange={checked =>
+                        setAttestation({
+                          ...attestation,
+                          reviewedNoEscalation: checked as boolean
+                        })
+                      }
+                      disabled={!canEdit}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="attestation-no-escalation"
+                      className="text-sm cursor-pointer"
+                    >
+                      I have reviewed additional risk factors and/or triggers which have
+                      been identified and believe no further escalation is required
+                    </Label>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="attestation-flu"
+                      checked={attestation.reviewedEscalatedFLU}
+                      onCheckedChange={checked =>
+                        setAttestation({
+                          ...attestation,
+                          reviewedEscalatedFLU: checked as boolean
+                        })
+                      }
+                      disabled={!canEdit}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="attestation-flu"
+                      className="text-sm cursor-pointer"
+                    >
+                      I have reviewed additional risk factors and/or triggers which have been
+                      identified and have further escalated to the FLU AML team
+                    </Label>
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="attestation-trms"
+                      checked={attestation.reviewedEscalatedTRMS}
+                      onCheckedChange={checked =>
+                        setAttestation({
+                          ...attestation,
+                          reviewedEscalatedTRMS: checked as boolean
+                        })
+                      }
+                      disabled={!canEdit}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="attestation-trms"
+                      className="text-sm cursor-pointer"
+                    >
+                      I have reviewed additional risk factors and/or triggers which have been
+                      identified and believe further escalation is required and TRMS has been
+                      filed
+                    </Label>
+                  </div>
+
+                  <Separator className="my-3" />
+
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="attestation-confirm"
+                      checked={attestation.confirmDataReviewed}
+                      onCheckedChange={checked =>
+                        setAttestation({
+                          ...attestation,
+                          confirmDataReviewed: checked as boolean
+                        })
+                      }
+                      disabled={!canEdit}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="attestation-confirm"
+                      className="text-sm cursor-pointer font-medium"
+                    >
+                      I confirm that all data has been reviewed and the responses to the above
+                      questions are accurate
+                    </Label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Separator />
+
+    {/* FLU AML Input */}
+    <Card className="bg-white border-slate-200">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          <h3 className="font-semibold flex items-center space-x-2">
+            <Shield className="h-5 w-5" />
+            <span>FLU AML Input</span>
+          </h3>
+
+          {/* AML FLU Outcome Section */}
+          <div className="space-y-4">
+            <h4 className="font-medium flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span>AML FLU Outcome</span>
+            </h4>
+
+            {/* Attestation Checkboxes – FLU AML Only */}
+            <Card className="bg-slate-50 border-slate-200 mt-4">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="flu-no-escalation"
+                      checked={outcomes.fluNoEscalation}
+                      onCheckedChange={checked =>
+                        setOutcomes({
+                          ...outcomes,
+                          fluNoEscalation: checked as boolean
+                        })
+                      }
+                      disabled={!canEditField("fluAmlTrms")}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="flu-no-escalation"
+                      className="text-sm cursor-pointer"
+                    >
+                      I have reviewed additional risk factors and/or triggers which have been identified and believe no further escalation is required.
+                    </Label>
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="flu-confirmed-acceptable"
+                      checked={outcomes.fluConfirmedAcceptable}
+                      onCheckedChange={checked =>
+                        setOutcomes({
+                          ...outcomes,
+                          fluConfirmedAcceptable: checked as boolean
+                        })
+                      }
+                      disabled={!canEditField("fluAmlTrms")}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="flu-confirmed-acceptable"
+                      className="text-sm cursor-pointer"
+                    >
+                      I have reviewed additional risk factors and/or triggers which have been identified and have confirmed with the client owner or client owner representative that the risk factors are acceptable.
+                    </Label>
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="flu-attestation-reviewed"
+                      checked={outcomes.fluAmlTrms}
+                      onCheckedChange={checked =>
+                        setOutcomes({
+                          ...outcomes,
+                          fluAmlTrms: checked as boolean
+                        })
+                      }
+                      disabled={!canEditField("fluAmlTrms")}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="flu-attestation-reviewed"
+                      className="text-sm cursor-pointer"
+                    >
+                      I have reviewed additional risk factors and/or triggers which have been identified and believe further escalation is required and TRMS has been filed.
+                    </Label>
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="flu-confirmed-exit"
+                      checked={outcomes.fluConfirmedExit}
+                      onCheckedChange={checked =>
+                        setOutcomes({
+                          ...outcomes,
+                          fluConfirmedExit: checked as boolean
+                        })
+                      }
+                      disabled={!canEditField("fluAmlTrms")}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="flu-confirmed-exit"
+                      className="text-sm cursor-pointer"
+                    >
+                      I have reviewed additional risk factors and/or triggers which have been identified and have confirmed with the client owner or client owner representative that the client will be exited.
+                    </Label>
+                  </div>
+
+                  <Separator className="my-3" />
+
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="flu-attestation-confirm"
+                      checked={outcomes.gfcTrms}
+                      onCheckedChange={checked =>
+                        setOutcomes({
+                          ...outcomes,
+                          gfcTrms: checked as boolean
+                        })
+                      }
+                      disabled={!canEditField("fluAmlTrms")}
+                      className="mt-1"
+                    />
+                    <Label
+                      htmlFor="flu-attestation-confirm"
+                      className="text-sm cursor-pointer font-medium"
+                    >
+                      I confirm that all data has been reviewed and the responses to the above questions are accurate
+                    </Label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3 mt-6">
+            <Button variant="destructive" size="sm">
+              Reject Return Case to Analyst
+            </Button>
+            <Button variant="outline" size="sm">
+              Cancel Case
+            </Button>
+          </div>
+
+          <p className="text-sm text-muted-foreground mt-2">
+            FLU cannot reject if they have started to fill items
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Separator />
+
+    {/* FLU AML Outcome */}
+    {(userRole === "flu-aml" ||
+      userRole === "hrs-analyst" ||
+      userRole === "hrs-manager") &&
+      outcomes.fluAmlOutcome && (
+        <div className="space-y-4">
+          <h4 className="font-medium flex items-center space-x-2">
+            <AlertTriangle className="h-4 w-4" />
+            <span>FLU AML Outcome</span>
+          </h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="flu-outcome">FLU AML Decision</Label>
+              <Select
+                value={outcomes.fluAmlOutcome}
+                onValueChange={value =>
+                  setOutcomes({ ...outcomes, fluAmlOutcome: value })
+                }
+                disabled={userRole !== "flu-aml"}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select outcome" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="retain">Retain</SelectItem>
+                  <SelectItem value="exit">Exit</SelectItem>
+                  <SelectItem value="reject">
+                    Reject (send back to HRA Analyst)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>File TRMS</Label>
+                <Switch
+                  checked={outcomes.fluAmlTrms}
+                  onCheckedChange={value =>
+                    setOutcomes({ ...outcomes, fluAmlTrms: value })
+                  }
+                  disabled={userRole !== "flu-aml"}
+                />
+              </div>
+
+              {outcomes.fluAmlTrms && (
+                <div className="space-y-2">
+                  <Label htmlFor="flu-trms-number">
+                    TRMS Tracking Number
+                  </Label>
+                  <Input
+                    id="flu-trms-number"
+                    value={outcomes.fluAmlTrmsNumber}
+                    onChange={e =>
+                      setOutcomes({
+                        ...outcomes,
+                        fluAmlTrmsNumber: e.target.value
+                      })
+                    }
+                    disabled={userRole !== "flu-aml"}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+  </div>
+);
+}
